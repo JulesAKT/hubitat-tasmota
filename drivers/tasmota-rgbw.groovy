@@ -12,7 +12,7 @@
  *
  *  Sonoff Wifi Switch
  *
- *  Author: Eric Maycock (erocm123) - Brutally butchered by Jules Taplin
+ *  Author: Eric Maycock (erocm123)
  *  Date: 2016-06-02
  */
  
@@ -176,6 +176,7 @@ def parseDescriptionAsMap(description) {
 def on() {
 	log.debug "on()"
     def cmds = []
+	sendEvent(name: "switch", value: "on");
     cmds << getAction("Power%20On")
     return cmds
 }
@@ -183,6 +184,7 @@ def on() {
 def off() {
     log.debug "off()"
 	def cmds = []
+	sendEvent(name: "switch", value: "off");
     cmds << getAction("Power%20Off")
     return cmds
 }
