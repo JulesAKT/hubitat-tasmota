@@ -15,7 +15,7 @@
  *  Author: Eric Maycock (erocm123)
  *  Date: 2016-06-02
  */
- 
+
 import groovy.json.JsonSlurper
 import groovy.util.XmlSlurper
 
@@ -33,9 +33,9 @@ metadata {
 		//capability "Sensor"
         //capability "Configuration"
         //capability "Health Check"
-        
+
         //command "reboot"
-        
+
         attribute   "needUpdate", "string"
         attribute   "uptime", "string"
         attribute   "ip", "string"
@@ -43,7 +43,7 @@ metadata {
 
 	simulator {
 	}
-    /* 
+    /*
     preferences {
         input description: "Once you change values on this page, the corner of the \"configuration\" icon will change orange until all configuration parameters are updated.", title: "Settings", displayDuringSetup: false, type: "paragraph", element: "paragraph"
 		generate_preferences(configuration_model())
@@ -53,7 +53,7 @@ metadata {
             input(name: "ipAddress", type: "string", title: "IP Address", displayDuringSetup: true, required: true)
 	}}
 /*
- 	tiles (scale: 2){     
+ 	tiles (scale: 2){
 		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
 			tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
 				attributeState "on", label:'${name}', action:"switch.off", backgroundColor:"#00a0dc", icon: "st.switches.switch.on", nextState:"turningOff"
@@ -72,7 +72,7 @@ metadata {
         valueTile("uptime", "uptime", width: 2, height: 1) {
     		state "uptime", label:'Uptime ${currentValue}'
 		}
-        
+
     }
 */
 
@@ -98,7 +98,7 @@ def configure() {
 def updated()
 {
     logging("updated()", 1)
-    def cmds = [] 
+    def cmds = []
     cmds = update_needed_settings()
     sendEvent(name: "checkInterval", value: 2 * 15 * 60 + 2 * 60, displayed: false, data: [protocol: "lan", hubHardwareId: device.hub.hardwareID])
     sendEvent(name:"needUpdate", value: device.currentValue("needUpdate"), displayed:false, isStateChange: true)
@@ -129,18 +129,18 @@ def parse(description) {
 		log.debug "Mac address of device found ${descMap["mac"]}"
         state.mac = descMap["mac"]
 	}
-    
+
     if (state.mac != null && state.dni != state.mac) state.dni = setDeviceNetworkId(state.mac)
     if (descMap["body"]) body = new String(descMap["body"].decodeBase64())
 
     if (body && body != "") {
-    
+
     if(body.startsWith("{") || body.startsWith("[")) {
     def slurper = new JsonSlurper()
     def result = slurper.parseText(body)
-    
+
     log.debug "result: ${result}"
-    
+
     if (result.containsKey("type")) {
         if (result.type == "configuration")
             events << update_current_properties(result)
@@ -167,7 +167,7 @@ def parse(description) {
 def parseDescriptionAsMap(description) {
 	description.split(",").inject([:]) { map, param ->
 		def nameAndValue = param.split(":")
-        
+
         if (nameAndValue.length == 2) map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
         else map += [(nameAndValue[0].trim()):""]
 	}
@@ -219,7 +219,7 @@ def setColor(value) {
     	setHsb(h, s, b)
     } else {
         log.warn "Invalid argument for setColor: ${value}"
-    }       
+    }
 }
 
 def setHsb(h,s,b)
@@ -238,7 +238,7 @@ def setHsb(h,s,b)
 	sendEvent(name: "level", value: b);
 	sendEvent(name: "colorMode", value: "RGB");
 	getAction(hsbcmd)
-	
+
 }
 
 def setHue(h)
@@ -249,7 +249,7 @@ def setHue(h)
 def setLevel(v,duration)
 {
 	if(state.colorMode == "RGB") {
-		setHsb(state.hue,state.saturation,v)	 
+		setHsb(state.hue,state.saturation,v)
 	}
 	else
 	{
@@ -261,19 +261,19 @@ def setLevel(v,duration)
 
 def setSaturation(s)
 {
-	setHsb(state.hue,s,state.level)	
+	setHsb(state.hue,s,state.level)
 }
 
 
-private getAction(uri){ 
+private getAction(uri){
   updateDNI()
   def userpass
   def response
-  if(password != null && password != "") 
+  if(password != null && password != "")
       userpass = encodeCredentials("admin", password)
-    
+
   def headers = getHeader(userpass)
-    
+
   def params = [
     uri: "http://${getHostAddress()}/ax?c1=${uri}",
     headers: headers
@@ -283,18 +283,18 @@ private getAction(uri){
     response = resp.data
   }
 
-  return parseResponse(response)    
+  return parseResponse(response)
 }
 
-private postAction(uri, data){ 
+private postAction(uri, data){
   updateDNI()
   def userpass
   def response
-  if(password != null && password != "") 
+  if(password != null && password != "")
       userpass = encodeCredentials("admin", password)
-    
+
   def headers = getHeader(userpass)
-    
+
   def params = [
     uri: "http://${getHostAddress()}${uri}",
     headers: headers
@@ -304,7 +304,7 @@ private postAction(uri, data){
     response = resp.data
   }
 
-  parseResponse(response)      
+  parseResponse(response)
 }
 
 private setDeviceNetworkId(ip, port = null){
@@ -320,24 +320,24 @@ private setDeviceNetworkId(ip, port = null){
     return myDNI
 }
 
-private updateDNI() { 
+private updateDNI() {
     if (state.dni != null && state.dni != "" && device.deviceNetworkId != state.dni) {
        device.deviceNetworkId = state.dni
     }
 }
 
 private getHostAddress() {
-    if (override == "true" && ip != null && ip != ""){
-        return "${ip}:80"
+    if (override == "true" && ipAddress != null && ipAddress != ""){
+        return "${ipAddress}:80"
     }
-    else if(getDeviceDataByName("ip") && getDeviceDataByName("port")){
-        return "${getDeviceDataByName("ip")}:${getDeviceDataByName("port")}"
+    else if(getDeviceDataByName("ipAddress") && getDeviceDataByName("port")){
+        return "${getDeviceDataByName("ipAddress")}:${getDeviceDataByName("port")}"
     }else{
-	    return "${ip}:80"
+	    return "${ipAddress}:80"
     }
 }
 
-private String convertIPtoHex(ipAddress) { 
+private String convertIPtoHex(ipAddress) {
     String hex = ipAddress.tokenize( '.' ).collect {  String.format( '%02x', it.toInteger() ) }.join()
     return hex
 }
@@ -383,12 +383,12 @@ def sync(ip, port) {
 def generate_preferences(configuration_model)
 {
     def configuration = new XmlSlurper().parseText(configuration_model)
-   
+
     configuration.Value.each
     {
         if(it.@hidden != "true" && it.@disabled != "true"){
         switch(it.@type)
-        {   
+        {
             case ["number"]:
                 input "${it.@index}", "number",
                     title:"${it.@label}\n" + "${it.Help}",
@@ -523,7 +523,7 @@ def parseResponse(description) {
 
     if (!device.currentValue("ip") || (device.currentValue("ip") != getDataValue("ip"))) events << createEvent(name: 'ip', value: getDataValue("ip"))
     events.each {
-        sendEvent(it)   
+        sendEvent(it)
     }
     return events
 }
