@@ -1,4 +1,4 @@
-/**
+**
  *  Copyright 2016 Eric Maycock & Jules Taplin
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -39,6 +39,7 @@ metadata {
         attribute   "needUpdate", "string"
         attribute   "uptime", "string"
         attribute   "ip", "string"
+		attribute	"level", "number" //added by damondins
 	}
 
 	simulator {
@@ -52,6 +53,10 @@ metadata {
 	preferences {		section("Sonoff Host") {
             input(name: "ipAddress", type: "string", title: "IP Address", displayDuringSetup: true, required: true)
 	}}
+
+	//tileAttribute ("device.level", key: "SLIDER_CONTROL") {
+    //    attributeState "level", action:"setLevel"
+    //}
 /*
  	tiles (scale: 2){
 		multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
@@ -208,6 +213,12 @@ def setColorTemperature(value)
 	state.colorMode = "CT"
 	sendEvent(name: "colorMode", value: "CT");
 	setLevel(state.level,0)
+}
+
+//added by damondins
+def setLevel(value) {
+	sendEvent(name: "level", value: value);
+	cmds << getAction("Dimmer%20" + value);
 }
 
 def setColor(value) {
