@@ -1,5 +1,5 @@
-**
- *  Copyright 2016 Eric Maycock & Jules Taplin
+/**
+ *  Copyright 2016 Eric Maycock. Jules Taplin and Damon Dinsmore
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -20,7 +20,7 @@ import groovy.json.JsonSlurper
 import groovy.util.XmlSlurper
 
 metadata {
-	definition (name: "Tasmota RGBW Bulb", namespace: "uk.org.ourhouse", author: "Jules Taplin") {
+	definition (name: "Tasmota RGBW or WWBulb", namespace: "uk.org.ourhouse", author: "Jules Taplin") {
         //capability "Actuator"
 		capability "Switch"
 		//capability "Refresh"
@@ -52,8 +52,10 @@ metadata {
 */
 	preferences {		section("Sonoff Host") {
             input(name: "ipAddress", type: "string", title: "IP Address", displayDuringSetup: true, required: true)
+			input(name: "TWlow", type: "string", title: "Tuneable White Low Level", displayDuringSetup: true, required: false)
+			input(name: "TWhigh", type: "string", title: "Tuneable White High Level", displayDuringSetup: true, required: false)
 	}}
-
+	
 	//tileAttribute ("device.level", key: "SLIDER_CONTROL") {
     //    attributeState "level", action:"setLevel"
     //}
@@ -207,12 +209,34 @@ def ping() {
     refresh()
 }
 
-
+//changed 1/29/2019 by damondins
 def setColorTemperature(value)
 {
 	state.colorMode = "CT"
 	sendEvent(name: "colorMode", value: "CT");
-	setLevel(state.level,0)
+	log.debug "ColorTemp = " + value
+	def intvalue = value.toInteger()
+	def intTWlow = TWlow.toInteger()
+	def intTWhigh = TWhigh.toInteger()
+	
+	def kelvindiff = intTWhigh - intTWlow
+	def tasmotadiff = 348
+	def kelvinscale = kelvindiff / tasmotadiff
+	kelvinscale = Math.round(kelvinscale)
+	convertedvalue =  intvalue / kelvinscale
+	flipvalue = 153 + (500 - convertedvalue) 
+	flipvalue = Math.round(flipvalue)
+	
+	if (flipvalue < 153) {
+		sendEvent(name: "Temp", value: 153);
+		cmds << getAction("CT%20" + 153);
+	} else if (flipvalue > 500) {
+		sendEvent(name: "Temp", value: 500);
+		cmds << getAction("CT%20" + 500);
+	} else {
+		sendEvent(name: "Temp", value: value);
+		cmds << getAction("CT%20" + flipvalue);
+	}
 }
 
 //added by damondins
@@ -222,7 +246,7 @@ def setLevel(value) {
 }
 
 def setColor(value) {
-	log.debug "HSVColor = "+value
+	log.debug "HSVColor = "+ value
 	   if (value instanceof Map) {
         def h = value.containsKey("hue") ? value.hue : null
         def s = value.containsKey("saturation") ? value.saturation : null
@@ -511,7 +535,7 @@ def update_needed_settings()
 
 def parseResponse(description) {
 	//log.debug "Parsing: ${description}"
-	return 				// DISABLED FOR NOW!
+	//return 				// DISABLED FOR NOW!
     def events = []
     def result = description
     log.debug "result: ${result}"
